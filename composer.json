@@ -3,7 +3,8 @@
     "require": {
         "aws/aws-sdk-php": "^3.17",
         "symfony/console": "^3.0",
-        "vlucas/phpdotenv": "^2.2"
+        "vlucas/phpdotenv": "^2.2",
+        "symfony/var-dumper": "^3.0"
     },
     "autoload": {
         "psr-4": {
