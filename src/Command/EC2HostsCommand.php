@@ -6,6 +6,7 @@ use Aws\Ec2\Ec2Client;
 use Aws\Ec2\Exception\Ec2Exception;
 use SplFileObject;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -15,6 +16,9 @@ class EC2HostsCommand extends Command {
 
 	const COMMENT_SECTION_HEADER = '# AWS records - start';
 	const COMMENT_SECTION_FOOTER = '# AWS records - end';
+
+	/** @var ProgressBar */
+	private $progress;
 
 	protected function configure() {
 		$this
@@ -30,9 +34,16 @@ class EC2HostsCommand extends Command {
 	}
 
 	protected function execute(InputInterface $input, OutputInterface $output) {
+		$this->progress = new ProgressBar($output);
+		$this->progress->setFormat('%message%');
+		$this->progress->start();
+
 		try {
 			$regions = $this->getRegions();
 			$instances = $this->getInstancesData($regions);
+			$this->progress->finish();
+			$this->progress->setMessage("Fetching regions...");
+			$output->writeln("\n");
 			if ($input->getOption('file') === FALSE) {
 				$this->dumpTable($output, $instances);
 			} else {
@@ -100,6 +111,8 @@ class EC2HostsCommand extends Command {
 	protected function getInstancesData($regions = []) {
 		$result = [];
 		foreach ($regions as $region) {
+			$this->progress->setMessage("Fetching instances from $region...");
+			$this->progress->advance();
 			$ec2 = new Ec2Client([
 				'version' => 'latest',
 				'region' => $region,
@@ -117,6 +130,8 @@ class EC2HostsCommand extends Command {
 	 * @return mixed|null
 	 */
 	protected function getRegions() {
+		$this->progress->setMessage("Fetching regions...");
+		$this->progress->advance();
 		$ec2client = new Ec2Client([
 			'version' => 'latest',
 			'region' => getenv('AWS_DEFAULT_REGION'),
