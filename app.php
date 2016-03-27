@@ -3,9 +3,11 @@
 
 require __DIR__.'/vendor/autoload.php';
 
-use Command\TestCommand;
 use Symfony\Component\Console\Application;
 
+(new Dotenv\Dotenv(__DIR__))->load();
+
 $application = new Application();
-$application->add(new TestCommand());
+$application->add(new Command\TestCommand());
+$application->add(new Command\EC2HostsCommand());
 $application->run();
