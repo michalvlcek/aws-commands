@@ -3,7 +3,9 @@ Useful (symfony) commands for working with AWS.
 ### # installation
 
 * `composer install`
-* create `.env` file from example (`cp .env.example .env`) and setup
+* create `.env` file from example (`cp .env.example .env`) and setup credentials:
+  * if you already have AWS credentials file `~/.aws/credentials` you can copy *access keys* from there
+  * if you don't you can create new *access keys* at http://aws.amazon.com/developers/access-keys/
 
 ### # usage
 * `php app.php` - for list of all commands
