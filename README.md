@@ -12,9 +12,11 @@ Useful (symfony) commands for working with AWS.
 * `php app.php name:of:command [[option] --argument]`
 
 ### # commands
-
-* `demo:greet Fabien` - example command
-* [`ec2:hosts-info`](#ec2hosts-info) - creating `/etc/hosts` records from all EC2 instances (name and IP)
+name | description
+--- | ---
+`demo:greet` | Example command.
+[`ec2:hosts-info`](#ec2hosts-info) | Creating ""`/etc/hosts`" records from all EC2 instances (name and IP).
+[`iam:assumed-roles`](#iamassumed-roles) | Lists assumed roles from group policies.
 
 ----
 
@@ -35,4 +37,30 @@ results in:
 ```
  12.12.123.123  SomeName        # i-c12ab06c
  12.12.12.1     AnotherName     # i-05fce0883ca1d7f12
+```
+----
+#### `iam:assumed-roles`
+
+Command attempts to extract all possible assumed roles.
+It is done by querying user associated groups and their policyes.
+Command which allows to grab informations from all EC2 instances (across all regions) in "hosts" style format.
+Default call (with no argument) prints output to stdOut. If you set `file` argument output is appended to specified file.
+
+```sh
+php app.php iam:assumed-roles
+```
+
+results in:
+
+```php
+array:2 [
+  0 => array:2 [
+    "account" => "012345678901"
+    "role" => "roleName"
+  ],
+  1 => array:2 [
+    "account" => "112345678901"
+    "role" => "anotherRoleName"
+  ]
+]
 ```
