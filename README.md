@@ -15,14 +15,14 @@ Useful (symfony) commands for working with AWS.
 name | description
 --- | ---
 `demo:greet` | Example command.
-[`ec2:hosts-info`](#ec2hosts-info) | Creating ""`/etc/hosts`" records from all EC2 instances (name and IP).
+[`ec2:hosts-info`](#ec2hosts-info) | Creating "`/etc/hosts`" records from all EC2 instances (name and IP).
 [`iam:assumed-roles`](#iamassumed-roles) | Lists assumed roles from group policies.
 
 ----
 
 #### `ec2:hosts-info`
 
-Command which allows to grab informations from all EC2 instances (across all regions) in "hosts" style format.
+Command which allows to grab information from all EC2 instances (across all regions and sub-accounts) in "hosts" style format.
 Default call (with no argument) prints output to stdOut. If you set `file` argument output is appended to specified file.
 
 ```sh
@@ -38,6 +38,7 @@ results in:
  12.12.123.123  SomeName        # i-c12ab06c
  12.12.12.1     AnotherName     # i-05fce0883ca1d7f12
 ```
+
 ----
 #### `iam:assumed-roles`
 

@@ -2,20 +2,25 @@
 
 namespace Command;
 
+use Aws\Credentials\Credentials;
 use Aws\Ec2\Ec2Client;
-use Aws\Ec2\Exception\Ec2Exception;
+use Aws\Sts\StsClient;
 use SplFileObject;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Util\Util;
 
 class EC2HostsCommand extends Command {
 
 	const COMMENT_SECTION_HEADER = '# AWS records - start';
 	const COMMENT_SECTION_FOOTER = '# AWS records - end';
+
+	const ROLE_ARN = 'arn:aws:iam::%s:role/%s';
 
 	/** @var ProgressBar */
 	private $progress;
@@ -38,19 +43,32 @@ class EC2HostsCommand extends Command {
 		$this->progress->setFormat('%message%');
 		$this->progress->start();
 
-		try {
-			$regions = $this->getRegions();
-			$instances = $this->getInstancesData($regions);
-			$this->progress->finish();
-			$this->progress->setMessage("Fetching regions...");
-			$output->writeln("\n");
-			if ($input->getOption('file') === FALSE) {
-				$this->dumpTable($output, $instances);
-			} else {
-				$this->dumpToFile($input->getOption('file'), $instances);
-			}
-		} catch (EC2Exception $e) {
-			dump($e);
+		$this->progress->setMessage("Fetching assumed roles...");
+		$roles = Util::assumedRoles();
+
+		$regions = $this->getRegions();
+		$instances = $this->getInstancesData($regions);
+
+		foreach ($roles as $role) {
+			$c = $this->getCredentials($role);
+			$credentials = new Credentials(
+				$c['AccessKeyId'],
+				$c['SecretAccessKey'],
+				$c['SessionToken'],
+				$c['Expiration']
+			);
+			$instances = array_merge($instances, $this->getInstancesData($regions, $credentials));
+		}
+
+
+
+		$this->progress->finish();
+		$this->progress->setMessage("Fetching regions...");
+		$output->writeln("\n");
+		if ($input->getOption('file') === FALSE) {
+			$this->dumpTable($output, $instances);
+		} else {
+			$this->dumpToFile($input->getOption('file'), $instances);
 		}
 	}
 
@@ -106,9 +124,10 @@ class EC2HostsCommand extends Command {
 	/**
 	 * Fetch instance data.
 	 * @param array $regions
+	 * @param Credentials|null $credentials
 	 * @return array
 	 */
-	protected function getInstancesData($regions = []) {
+	protected function getInstancesData($regions = [], Credentials $credentials = null) {
 		$result = [];
 		foreach ($regions as $region) {
 			$this->progress->setMessage("Fetching instances from $region...");
@@ -116,6 +135,7 @@ class EC2HostsCommand extends Command {
 			$ec2 = new Ec2Client([
 				'version' => 'latest',
 				'region' => $region,
+				'credentials' => $credentials,
 			]);
 			$instances = $ec2->describeInstances();
 			$path = "Reservations[].Instances[].{name: Tags[?Key == 'Name'].Value | [0], id: InstanceId, state: State.Name, ip: PublicIpAddress}";
@@ -137,5 +157,22 @@ class EC2HostsCommand extends Command {
 			'region' => getenv('AWS_DEFAULT_REGION'),
 		]);
 		return $ec2client->describeRegions()->search('Regions[].RegionName');
+	}
+
+	/**
+	 * @param array $role
+	 * @return array
+	 */
+	protected function getCredentials($role = []) {
+		$c = new StsClient([
+			'version' => 'latest',
+			'region' => 'us-east-1',
+		]);
+
+		$credentials = $c->assumeRole([
+			'RoleArn' => sprintf(self::ROLE_ARN, $role['account'], $role['role']),
+			'RoleSessionName' => 'aws-commands',
+		])->search('Credentials');
+		return $credentials;
 	}
 }
