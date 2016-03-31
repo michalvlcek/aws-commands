@@ -10,4 +10,5 @@ use Symfony\Component\Console\Application;
 $application = new Application();
 $application->add(new Command\TestCommand());
 $application->add(new Command\EC2HostsCommand());
+$application->add(new Command\AssumedRoles());
 $application->run();
